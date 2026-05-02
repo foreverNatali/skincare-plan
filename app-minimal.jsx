@@ -12,23 +12,23 @@ function StepRow({ step, idx, total, checked, onToggle }) {
   return (
     <div onClick={onToggle} style={{
       display: 'grid', gridTemplateColumns: '60px 1fr 100px 24px', gap: 24, alignItems: 'baseline',
-      padding: '16px 0', borderTop: '1px solid #b8b6b2', cursor: 'pointer',
+      padding: '16px 0', borderTop: '1px solid #6f6c64', cursor: 'pointer',
       transition: 'opacity 0.3s ease', opacity: checked ? 0.4 : 1,
     }}
-    onMouseEnter={e=>e.currentTarget.style.background='#d8d6d2'}
+    onMouseEnter={e=>e.currentTarget.style.background='#c4c0b8'}
     onMouseLeave={e=>e.currentTarget.style.background=''}>
-      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.05em' }}>
+      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.05em' }}>
         {String(idx+1).padStart(2,'0')} / {String(total).padStart(2,'0')}
       </div>
       <div>
         <div style={{ fontSize: 15, color: '#0a0a0a', lineHeight: 1.4, fontWeight: 500,
           textDecoration: checked ? 'line-through' : 'none' }}>{step.n}</div>
-        {step.note && <div style={{ fontSize: 13, color: '#888', marginTop: 4, lineHeight: 1.5 }}>{step.note}</div>}
+        {step.note && <div style={{ fontSize: 13, color: '#3d3a34', marginTop: 4, lineHeight: 1.5 }}>{step.note}</div>}
       </div>
-      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#999',
+      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#4a4740',
         letterSpacing: '0.15em', textTransform: 'uppercase' }}>{KIND[step.kind]}</div>
       <div style={{
-        width: 18, height: 18, border: `1px solid ${checked ? '#0a0a0a' : '#ccc'}`,
+        width: 24, height: 24, border: `2px solid #0a0a0a`,
         background: checked ? '#0a0a0a' : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.2s ease',
@@ -46,10 +46,10 @@ function Section({ num, label, steps, dayIdx, sec, checks, toggle }) {
   return (
     <section style={{ marginBottom: 64 }}>
       <header style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'baseline', marginBottom: 8, paddingBottom: 8 }}>
-        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.1em' }}>{num}</div>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.1em' }}>{num}</div>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#0a0a0a', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</div>
-        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#666' }}>
-          {done}/{steps.length} <span style={{ color: '#ccc' }}>·</span> {Math.round(done/steps.length*100)||0}%
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#2a2823' }}>
+          {done}/{steps.length} <span style={{ color: '#7a7770' }}>·</span> {Math.round(done/steps.length*100)||0}%
         </div>
       </header>
       <div>
@@ -57,7 +57,7 @@ function Section({ num, label, steps, dayIdx, sec, checks, toggle }) {
           <StepRow key={i} step={s} idx={i} total={steps.length}
             checked={!!checks[`${dayIdx}_${sec}_${i}`]} onToggle={() => toggle(dayIdx, sec, i)} />
         ))}
-        <div style={{ borderTop: '1px solid #b8b6b2' }}/>
+        <div style={{ borderTop: '1px solid #6f6c64' }}/>
       </div>
     </section>
   );
@@ -116,8 +116,8 @@ function App() {
   return (
     <>
       <style>{`
-        body { background: #d8d6d2; color: #0a0a0a; font-family: 'Inter Tight', -apple-system, sans-serif; }
-        ::selection { background: #0a0a0a; color: #d8d6d2; }
+        body { background: #c4c0b8; color: #0a0a0a; font-family: 'Inter Tight', -apple-system, sans-serif; }
+        ::selection { background: #0a0a0a; color: #c4c0b8; }
       `}</style>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px clamp(20px, 4vw, 48px)' }}>
@@ -127,11 +127,11 @@ function App() {
           display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 32, alignItems: 'center',
           paddingBottom: 24, borderBottom: '1px solid #0a0a0a', marginBottom: 64,
         }}>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#666' }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#2a2823' }}>
             SKINCARE / 2026 / VOL.{Math.ceil((Object.keys(history).length||1)/7)}
           </div>
           <div style={{ width: 8, height: 8, background: '#0a0a0a' }}/>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#666', textAlign: 'right' }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#2a2823', textAlign: 'right' }}>
             {now.toLocaleDateString('en-GB').replace(/\//g,'.')} / STREAK {String(streak).padStart(2,'0')}
           </div>
         </header>
@@ -156,7 +156,7 @@ function App() {
               ['04', 'Стрик', String(streak).padStart(2,'0')],
             ].map(([n, l, v]) => (
               <div key={n}>
-                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#999', letterSpacing: '0.15em', marginBottom: 8 }}>{n} / {l}</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 8 }}>{n} / {l}</div>
                 <div style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 500, letterSpacing: '-0.02em' }}>{v}</div>
               </div>
             ))}
@@ -165,7 +165,7 @@ function App() {
 
         {/* Days grid */}
         <div style={{ marginBottom: 64 }}>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
             ВЫБРАТЬ ДЕНЬ
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid #0a0a0a', borderBottom: '1px solid #0a0a0a' }}>
@@ -176,13 +176,13 @@ function App() {
               return (
                 <button key={i} onClick={() => setCur(i)} style={{
                   background: active ? '#0a0a0a' : 'transparent',
-                  color: active ? '#d8d6d2' : '#0a0a0a',
+                  color: active ? '#c4c0b8' : '#0a0a0a',
                   border: 'none', borderRight: i < 6 ? '1px solid #0a0a0a' : 'none',
                   padding: '20px 12px', cursor: 'pointer', textAlign: 'left',
                   transition: 'all 0.2s ease', fontFamily: 'inherit',
                   display: 'flex', flexDirection: 'column', gap: 12, minHeight: 140,
                 }}
-                onMouseEnter={e=>{ if(!active) e.currentTarget.style.background='#cac8c4'; }}
+                onMouseEnter={e=>{ if(!active) e.currentTarget.style.background='#aeaaa2'; }}
                 onMouseLeave={e=>{ if(!active) e.currentTarget.style.background=''; }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.15em' }}>
@@ -197,7 +197,7 @@ function App() {
                     {Math.round(p.pct*100)}%
                   </div>
                   {/* progress bar */}
-                  <div style={{ height: 2, background: active ? 'rgba(255,255,255,0.2)' : '#b8b6b2', position: 'relative' }}>
+                  <div style={{ height: 2, background: active ? 'rgba(255,255,255,0.2)' : '#6f6c64', position: 'relative' }}>
                     <div style={{ position: 'absolute', inset: 0, width: `${p.pct*100}%`, background: active ? '#c9986a' : '#0a0a0a', transition: 'width 0.5s ease' }}/>
                   </div>
                 </button>
@@ -209,7 +209,7 @@ function App() {
         {/* Day hero */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginBottom: 80, alignItems: 'flex-end' }}>
           <div>
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em', marginBottom: 16 }}>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
               № 0{cur+1} / {isToday ? 'СЕГОДНЯ' : day.name.toUpperCase()} / {day.mood.toUpperCase()}
             </div>
             <h2 style={{
@@ -218,13 +218,13 @@ function App() {
             }}>{day.theme}</h2>
           </div>
           <div>
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em', marginBottom: 16 }}>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
               ПРОГРЕСС / {dp.done} ИЗ {dp.total}
             </div>
-            <div style={{ height: 4, background: '#b8b6b2', position: 'relative', marginBottom: 12 }}>
+            <div style={{ height: 4, background: '#6f6c64', position: 'relative', marginBottom: 12 }}>
               <div style={{ position: 'absolute', inset: 0, width: `${dp.pct*100}%`, background: '#0a0a0a', transition: 'width 0.6s ease' }}/>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#666' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#2a2823' }}>
               <span>0%</span>
               <span style={{ color: '#0a0a0a', fontWeight: 600 }}>{Math.round(dp.pct*100)}%</span>
               <span>100%</span>
@@ -237,7 +237,7 @@ function App() {
           display: 'grid', gridTemplateColumns: '60px 1fr', gap: 24, marginBottom: 80,
           paddingTop: 24, paddingBottom: 24, borderTop: '1px solid #0a0a0a', borderBottom: '1px solid #0a0a0a',
         }}>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em' }}>NOTE</div>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em' }}>NOTE</div>
           <p style={{ fontSize: 'clamp(18px, 2vw, 22px)', lineHeight: 1.5, color: '#0a0a0a', margin: 0, maxWidth: 700 }}>
             {day.tip}
           </p>
@@ -249,11 +249,11 @@ function App() {
 
         {/* Week summary */}
         <section style={{ marginTop: 96, paddingTop: 32, borderTop: '1px solid #0a0a0a' }}>
-          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
             СВОДКА НЕДЕЛИ
           </div>
           <h3 style={{ fontSize: 'clamp(40px, 6vw, 72px)', fontWeight: 500, lineHeight: 0.95, letterSpacing: '-0.04em', marginBottom: 48 }}>
-            {Math.round(stats.pct*100)}<span style={{ color: '#999' }}>%</span> <span style={{ color: '#c9986a' }}>выполнено</span>
+            {Math.round(stats.pct*100)}<span style={{ color: '#4a4740' }}>%</span> <span style={{ color: '#c9986a' }}>выполнено</span>
           </h3>
 
           {/* Week bars */}
@@ -262,11 +262,11 @@ function App() {
               const p = dayProgress(i);
               return (
                 <div key={i}>
-                  <div style={{ height: 100, background: '#cac8c4', position: 'relative', marginBottom: 8 }}>
+                  <div style={{ height: 100, background: '#aeaaa2', position: 'relative', marginBottom: 8 }}>
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0,
                       height: `${p.pct*100}%`, background: i===today?'#c9986a':'#0a0a0a', transition: 'height 0.5s ease' }}/>
                   </div>
-                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#999', letterSpacing: '0.1em' }}>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#4a4740', letterSpacing: '0.1em' }}>
                     {d.short} <span style={{ color: '#0a0a0a' }}>{Math.round(p.pct*100)}</span>
                   </div>
                 </div>
@@ -277,18 +277,18 @@ function App() {
           {/* Favorites */}
           {stats.fav.length > 0 && stats.fav[0][1] > 0 && (
             <div>
-              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999', letterSpacing: '0.15em', marginBottom: 16 }}>
+              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
                 ЛЮБИМЫЕ ШАГИ / TOP {stats.fav.length}
               </div>
               <div style={{ borderTop: '1px solid #0a0a0a' }}>
                 {stats.fav.map(([name, count], i) => (
                   <div key={name} style={{
                     display: 'grid', gridTemplateColumns: '60px 1fr 80px 60px', gap: 24, alignItems: 'baseline',
-                    padding: '20px 0', borderBottom: '1px solid #b8b6b2',
+                    padding: '20px 0', borderBottom: '1px solid #6f6c64',
                   }}>
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#999' }}>{String(i+1).padStart(2,'0')}</span>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740' }}>{String(i+1).padStart(2,'0')}</span>
                     <span style={{ fontSize: 18, fontWeight: 500 }}>{name}</span>
-                    <div style={{ height: 4, background: '#b8b6b2', position: 'relative' }}>
+                    <div style={{ height: 4, background: '#6f6c64', position: 'relative' }}>
                       <div style={{ position: 'absolute', inset: 0, width: `${(count/stats.fav[0][1])*100}%`, background: '#0a0a0a' }}/>
                     </div>
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 13, color: '#0a0a0a', textAlign: 'right' }}>×{count}</span>
@@ -301,7 +301,7 @@ function App() {
 
         <footer style={{ marginTop: 80, paddingTop: 24, borderTop: '1px solid #0a0a0a',
           display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
-          color: '#999', letterSpacing: '0.15em' }}>
+          color: '#4a4740', letterSpacing: '0.15em' }}>
           <span>SKINCARE PROTOCOL / 2026</span>
           <span>END</span>
         </footer>
