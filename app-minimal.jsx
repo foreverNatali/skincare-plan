@@ -122,135 +122,33 @@ function Section({ num, label, steps, dayIdx, sec, checks, toggle, editing, muta
   );
 }
 
-// ---------- Sync panel ----------
-
-function SyncPanel({ status, onClose, syncReady }) {
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
-
-  const signIn = async () => {
-    setBusy(true); setMsg('');
-    const r = await window.SkinSync.signInGoogle();
-    setBusy(false);
-    if (!r.ok) setMsg('✗ ' + (r.error || 'Не удалось войти'));
-    else if (r.redirect) setMsg('Перенаправление на вход Google...');
-    else { setMsg('✓ Вошли! Данные подтягиваются...'); setTimeout(onClose, 800); }
-  };
-
-  const signOut = () => { if (confirm('Выйти из аккаунта Google? Локальные данные останутся.')) window.SkinSync.signOut(); };
-
-  const user = status.user;
-  const isGoogle = user && !user.anonymous;
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.7)', zIndex: 1000,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-    }} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{
-        background: '#c4c0b8', maxWidth: 440, width: '100%', padding: 32,
-        border: '1px solid #0a0a0a',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
-          <h3 style={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em', margin: 0 }}>Синхронизация</h3>
-          <button onClick={onClose} style={{ ...iconBtn, width: 'auto', padding: '4px 12px' }}>✕</button>
-        </div>
-
-        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#4a4740', marginBottom: 8 }}>STATUS</div>
-        <div style={{ marginBottom: 32, fontSize: 14, lineHeight: 1.6 }}>
-          {!syncReady && 'Подключение...'}
-          {syncReady && status.mode === 'local' && (
-            <div>
-              <div style={{ marginBottom: 8 }}>○ Локальный режим — облако недоступно</div>
-              <div style={{ fontSize: 12, color: '#4a4740', lineHeight: 1.5 }}>
-                Этот домен не добавлен в Firebase. <b>Console → Authentication → Settings → Authorized domains</b>, добавь домен (например <code>forevernatali.github.io</code>) и обнови страницу.
-              </div>
-            </div>
-          )}
-          {syncReady && isGoogle && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {user.photo && <img src={user.photo} alt="" style={{ width: 40, height: 40, borderRadius: '50%' }}/>}
-              <div>
-                <div style={{ fontWeight: 500 }}>{user.name || 'Google аккаунт'}</div>
-                <div style={{ fontSize: 12, color: '#4a4740' }}>{user.email}</div>
-              </div>
-            </div>
-          )}
-          {syncReady && status.mode === 'cloud' && !isGoogle && (
-            <span>○ Гость — данные на этом устройстве. Войди через Google, чтобы синхронизировать с телефоном.</span>
-          )}
-        </div>
-
-        {syncReady && status.mode === 'cloud' && !isGoogle && (
-          <button onClick={signIn} disabled={busy} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-            width: '100%', padding: '14px 20px', background: '#0a0a0a', color: '#c4c0b8',
-            border: 'none', fontSize: 15, fontWeight: 500, cursor: busy ? 'wait' : 'pointer',
-            fontFamily: 'inherit',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#c4c0b8" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#c4c0b8" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".75"/>
-              <path fill="#c4c0b8" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".5"/>
-              <path fill="#c4c0b8" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
-            </svg>
-            Войти через Google
-          </button>
-        )}
-
-        {isGoogle && (
-          <div style={{ borderTop: '1px solid #6f6c64', paddingTop: 24 }}>
-            <p style={{ fontSize: 13, color: '#2a2823', lineHeight: 1.6, marginBottom: 16 }}>
-              Открой сайт на другом устройстве и войди тем же Google аккаунтом — все данные подтянутся автоматически.
-            </p>
-            <button onClick={signOut} style={{
-              padding: '10px 16px', background: 'transparent', color: '#0a0a0a',
-              border: '1px solid #6f6c64', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
-              letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase',
-            }}>Выйти</button>
-          </div>
-        )}
-
-        {msg && <div style={{ marginTop: 16, fontSize: 13, color: '#0a0a0a' }}>{msg}</div>}
-      </div>
-    </div>
-  );
-}
-
 // ---------- Main App ----------
 
-function App() {
+function App({ initial }) {
   const [cur, setCur] = useState(todayIdx());
-  const [routine, setRoutine] = useState(cloneDefault());
-  const [checks, setChecks] = useState({});
-  const [history, setHistory] = useState({});
+  const [routine, setRoutine] = useState(() => (initial?.routine && Array.isArray(initial.routine) && initial.routine.length === 7) ? initial.routine : cloneDefault());
+  const [checks, setChecks] = useState(initial?.checks || {});
+  const [history, setHistory] = useState(initial?.history || {});
   const [editing, setEditing] = useState(false);
-  const [showSync, setShowSync] = useState(false);
-  const [syncStatus, setSyncStatus] = useState({ ready: false });
+  const [user, setUser] = useState(initial?.user || null);
   const today = todayIdx();
-  const skipNextSync = useRef(false);
+  const skipNextSync = useRef(true); // skip first push (we just received it)
 
-  // init Firebase sync
+  // subscribe to remote state changes (other devices)
   useEffect(() => {
-    let off;
-    (async () => {
-      try {
-        await window.SkinSync.init();
-        off = window.SkinSync.onState((s) => {
-          setSyncStatus(s);
-          skipNextSync.current = true;
-          setChecks(s.checks || {});
-          setHistory(s.history || {});
-          if (s.routine && Array.isArray(s.routine) && s.routine.length === 7) setRoutine(s.routine);
-        });
-      } catch (e) { console.error(e); setSyncStatus({ ready: true, error: e.message }); }
-    })();
-    return () => { if (off) off(); };
+    const off = window.SkinSync.onState((s) => {
+      if (!s.signedIn) return;
+      setUser(s.user);
+      skipNextSync.current = true;
+      setChecks(s.checks || {});
+      setHistory(s.history || {});
+      if (s.routine && Array.isArray(s.routine) && s.routine.length === 7) setRoutine(s.routine);
+    });
+    return () => off && off();
   }, []);
 
   // Push checks/history
   useEffect(() => {
-    if (!syncStatus.ready) return;
     if (skipNextSync.current) { skipNextSync.current = false; return; }
     const nextHistory = { ...history };
     const k = dateKey(0);
@@ -319,14 +217,20 @@ function App() {
 
       {/* Floating action toolbar */}
       <div style={{
-        position: 'fixed', top: 16, right: 16, zIndex: 100, display: 'flex', gap: 8,
+        position: 'fixed', bottom: 24, right: 24, zIndex: 100, display: 'flex', gap: 8,
       }}>
-        <button onClick={() => setShowSync(true)} title="Синхронизация" style={floatBtn(false)}>
-          ⇄ SYNC
-        </button>
         <button onClick={() => setEditing(e => !e)} style={floatBtn(editing)}>
-          {editing ? '✓ ГОТОВО' : '✎ EDIT'}
+          {editing ? '✓ DONE' : '✎ EDIT'}
         </button>
+        {user && (
+          <button onClick={() => { if (confirm('Выйти?')) window.SkinSync.signOut(); }}
+            title={user.email || 'Выйти'}
+            style={{ ...floatBtn(false), padding: 4, width: 36, height: 36, overflow: 'hidden' }}>
+            {user.photo
+              ? <img src={user.photo} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}/>
+              : (user.name || user.email || '?').slice(0,1).toUpperCase()}
+          </button>
+        )}
       </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px clamp(20px, 4vw, 48px)' }}>
@@ -511,12 +415,9 @@ function App() {
           display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
           color: '#4a4740', letterSpacing: '0.15em' }}>
           <span>SKINCARE PROTOCOL / 2026</span>
-          <span>{syncStatus.ready ? (syncStatus.mode === 'cloud' ? '● CLOUD SYNC' : '○ LOCAL ONLY') : '... CONNECTING'}</span>
+          <span>{syncStatus.ready ? '● LOCAL' : '...'}</span>
         </footer>
       </div>
-
-      {showSync && <SyncPanel status={syncStatus} syncReady={syncStatus.ready}
-        onClose={() => setShowSync(false)} />}
     </>
   );
 }
@@ -533,4 +434,72 @@ const floatBtn = (active) => ({
   textTransform: 'uppercase',
 });
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+
+function Root() {
+  const [s, setS] = useState({ ready: false });
+  useEffect(() => {
+    let off;
+    (async () => {
+      await window.SkinSync.init();
+      off = window.SkinSync.onState(setS);
+    })();
+    return () => { if (off) off(); };
+  }, []);
+  if (!s.ready) return <LoadingScreen msg="Загрузка..." />;
+  if (!s.signedIn) return <LoginScreen err={s.error} />;
+  return <App initial={s} />;
+}
+
+function LoadingScreen({ msg }) {
+  return <div style={{ minHeight: '100vh', background: '#c4c0b8', color: '#0a0a0a',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'JetBrains Mono, monospace', fontSize: 12, letterSpacing: '0.2em' }}>{msg}</div>;
+}
+
+function LoginScreen({ err }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const click = async () => {
+    setBusy(true); setMsg('');
+    const r = await window.SkinSync.signInGoogle();
+    if (!r.ok) { setBusy(false); setMsg('✗ ' + (r.error || 'Не удалось')); }
+    else if (r.redirect) setMsg('Перенаправление...');
+  };
+  return (
+    <div style={{ minHeight: '100vh', background: '#c4c0b8', color: '#0a0a0a',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+      fontFamily: 'Inter Tight, sans-serif' }}>
+      <div style={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.25em', color: '#4a4740', marginBottom: 24 }}>
+          SKINCARE / 2026 / VOL.1
+        </div>
+        <h1 style={{ fontSize: 56, fontWeight: 500, letterSpacing: '-0.04em', lineHeight: 0.95, marginBottom: 16 }}>
+          Skincare<br/>Protocol
+        </h1>
+        <p style={{ fontSize: 15, color: '#2a2823', lineHeight: 1.6, marginBottom: 40 }}>
+          Войди через Google, чтобы прогресс синхронизировался между телефоном и компьютером.
+        </p>
+        <button onClick={click} disabled={busy} style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+          width: '100%', padding: '16px 20px', background: '#0a0a0a', color: '#c4c0b8',
+          border: 'none', fontSize: 16, fontWeight: 500, cursor: busy ? 'wait' : 'pointer',
+          fontFamily: 'inherit',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path fill="#c4c0b8" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#c4c0b8" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".75"/>
+            <path fill="#c4c0b8" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".5"/>
+            <path fill="#c4c0b8" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/>
+          </svg>
+          {busy ? 'Подождите...' : 'Войти через Google'}
+        </button>
+        {msg && <div style={{ marginTop: 16, fontSize: 13 }}>{msg}</div>}
+        {err && <div style={{ marginTop: 32, fontSize: 12, color: '#7a3a3a', lineHeight: 1.5 }}>
+          Ошибка инициализации: {err}<br/>
+          Проверь: <b>Firebase Console → Authentication → Sign-in method → Google → Enable</b>.
+        </div>}
+      </div>
+    </div>
+  );
+}
