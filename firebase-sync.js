@@ -4,12 +4,12 @@
 
 (function () {
   const firebaseConfig = {
-    apiKey: "AIzaSyCYKqkucCkc0SyBXQ3iSVXdcJ9YxdpVbAM",
-    authDomain: "skincare-plan-d3030.firebaseapp.com",
-    projectId: "skincare-plan-d3030",
-    storageBucket: "skincare-plan-d3030.firebasestorage.app",
-    messagingSenderId: "1037277928019",
-    appId: "1:1037277928019:web:8a9bfec2b88abd34caf65a"
+    apiKey: "AIzaSyCmeXZw8bSf9wpZDrH6m3LKzJi8hCMDmJA",
+    authDomain: "skincare-plan.firebaseapp.com",
+    projectId: "skincare-plan",
+    storageBucket: "skincare-plan.firebasestorage.app",
+    messagingSenderId: "740167935677",
+    appId: "1:740167935677:web:d2550cd2f600013fa579d4"
   };
 
   let app, auth, db, sdk, unsub, listeners = [];
