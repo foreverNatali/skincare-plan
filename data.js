@@ -1,4 +1,5 @@
-// Skincare planner data — 7 days, morning/evening routines
+// Skincare planner — DEFAULT routine (used as initial seed only;
+// after first load the routine lives in Firestore and can be edited in-app)
 window.SKINCARE_DATA = [
   { name: 'Понедельник', short: 'Пн', theme: 'День ретиноида', mood: 'Renewal',
     tip: 'Вечером — Crystal Retinal. Кожа должна быть СУХОЙ 15–20 минут перед нанесением. Ретиноид наносить последним активом.',

@@ -1,22 +1,54 @@
-// Modern Minimal — Swiss style skincare planner
-const { useState, useEffect, useMemo } = React;
-const DATA = window.SKINCARE_DATA;
+// Modern Minimal — Swiss style skincare planner with Firebase sync + edit mode
+const { useState, useEffect, useMemo, useRef } = React;
+const DEFAULT_DATA = window.SKINCARE_DATA;
 const KIND = window.SKINCARE_KIND_LABELS;
+const KIND_KEYS = Object.keys(KIND);
 
 const todayIdx = () => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; };
 const dateKey = (o=0) => { const d = new Date(); d.setDate(d.getDate()+o); return d.toISOString().slice(0,10); };
-const loadJSON = (k,f) => { try { const v = localStorage.getItem(k); return v?JSON.parse(v):f; } catch { return f; } };
-const saveJSON = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+const cloneDefault = () => JSON.parse(JSON.stringify(DEFAULT_DATA));
 
-function StepRow({ step, idx, total, checked, onToggle }) {
+// ---------- Sub-components ----------
+
+function StepRow({ step, idx, total, checked, onToggle, editing, onEdit, onDelete, onKind }) {
+  const [open, setOpen] = useState(false);
+  const noteRef = useRef(null);
+
+  if (editing) {
+    return (
+      <div style={{
+        display: 'grid', gridTemplateColumns: '40px 1fr 110px 32px', gap: 16, alignItems: 'flex-start',
+        padding: '12px 0', borderTop: '1px solid #6f6c64',
+      }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', paddingTop: 8 }}>
+          {String(idx+1).padStart(2,'0')}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <input value={step.n} onChange={e => onEdit({ ...step, n: e.target.value })}
+            placeholder="Название"
+            style={editInputStyle(true)} />
+          <input value={step.note || ''} onChange={e => onEdit({ ...step, note: e.target.value })}
+            placeholder="Заметка"
+            style={editInputStyle(false)} />
+        </div>
+        <select value={step.kind} onChange={e => onKind(e.target.value)} style={{
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 11, padding: '8px 6px',
+          background: '#c4c0b8', border: '1px solid #0a0a0a', color: '#0a0a0a',
+          letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer',
+        }}>
+          {KIND_KEYS.map(k => <option key={k} value={k}>{KIND[k]}</option>)}
+        </select>
+        <button onClick={onDelete} title="Удалить" style={iconBtn}>✕</button>
+      </div>
+    );
+  }
+
   return (
     <div onClick={onToggle} style={{
       display: 'grid', gridTemplateColumns: '60px 1fr 100px 24px', gap: 24, alignItems: 'baseline',
       padding: '16px 0', borderTop: '1px solid #6f6c64', cursor: 'pointer',
       transition: 'opacity 0.3s ease', opacity: checked ? 0.4 : 1,
-    }}
-    onMouseEnter={e=>e.currentTarget.style.background='#c4c0b8'}
-    onMouseLeave={e=>e.currentTarget.style.background=''}>
+    }}>
       <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.05em' }}>
         {String(idx+1).padStart(2,'0')} / {String(total).padStart(2,'0')}
       </div>
@@ -26,23 +58,39 @@ function StepRow({ step, idx, total, checked, onToggle }) {
         {step.note && <div style={{ fontSize: 13, color: '#3d3a34', marginTop: 4, lineHeight: 1.5 }}>{step.note}</div>}
       </div>
       <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#4a4740',
-        letterSpacing: '0.15em', textTransform: 'uppercase' }}>{KIND[step.kind]}</div>
+        letterSpacing: '0.15em', textTransform: 'uppercase' }}>{KIND[step.kind] || ''}</div>
       <div style={{
         width: 24, height: 24, border: `2px solid #0a0a0a`,
         background: checked ? '#0a0a0a' : 'transparent',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         transition: 'all 0.2s ease',
       }}>
-        {checked && <svg width="10" height="8" viewBox="0 0 12 9" fill="none">
-          <path d="M1 4.5L4.5 8L11 1" stroke="white" strokeWidth="1.5" strokeLinecap="square"/>
+        {checked && <svg width="12" height="10" viewBox="0 0 12 9" fill="none">
+          <path d="M1 4.5L4.5 8L11 1" stroke="#c4c0b8" strokeWidth="2" strokeLinecap="square"/>
         </svg>}
       </div>
     </div>
   );
 }
 
-function Section({ num, label, steps, dayIdx, sec, checks, toggle }) {
+const editInputStyle = (big) => ({
+  fontFamily: 'inherit', fontSize: big ? 15 : 13, fontWeight: big ? 500 : 400,
+  color: '#0a0a0a', background: 'transparent',
+  border: 'none', borderBottom: '1px solid #6f6c64', padding: '4px 0', outline: 'none',
+});
+
+const iconBtn = {
+  width: 32, height: 32, border: '1px solid #0a0a0a', background: 'transparent',
+  fontFamily: 'JetBrains Mono, monospace', fontSize: 12, cursor: 'pointer', color: '#0a0a0a',
+};
+
+function Section({ num, label, steps, dayIdx, sec, checks, toggle, editing, mutate }) {
   const done = steps.filter((_, i) => checks[`${dayIdx}_${sec}_${i}`]).length;
+
+  const updateStep = (i, next) => mutate(d => { d[dayIdx][sec === 'm' ? 'morning' : 'evening'][i] = next; });
+  const deleteStep = (i) => mutate(d => { d[dayIdx][sec === 'm' ? 'morning' : 'evening'].splice(i, 1); });
+  const addStep = () => mutate(d => { d[dayIdx][sec === 'm' ? 'morning' : 'evening'].push({ n: 'Новый шаг', note: '', kind: 'cream' }); });
+
   return (
     <section style={{ marginBottom: 64 }}>
       <header style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 24, alignItems: 'baseline', marginBottom: 8, paddingBottom: 8 }}>
@@ -55,34 +103,193 @@ function Section({ num, label, steps, dayIdx, sec, checks, toggle }) {
       <div>
         {steps.map((s, i) => (
           <StepRow key={i} step={s} idx={i} total={steps.length}
-            checked={!!checks[`${dayIdx}_${sec}_${i}`]} onToggle={() => toggle(dayIdx, sec, i)} />
+            checked={!!checks[`${dayIdx}_${sec}_${i}`]} onToggle={() => toggle(dayIdx, sec, i)}
+            editing={editing}
+            onEdit={(next) => updateStep(i, next)}
+            onKind={(kind) => updateStep(i, { ...s, kind })}
+            onDelete={() => deleteStep(i)} />
         ))}
         <div style={{ borderTop: '1px solid #6f6c64' }}/>
+        {editing && (
+          <button onClick={addStep} style={{
+            marginTop: 16, padding: '12px 20px', background: '#0a0a0a', color: '#c4c0b8',
+            border: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+            letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer',
+          }}>+ Добавить шаг</button>
+        )}
       </div>
     </section>
   );
 }
 
+// ---------- Sync panel ----------
+
+function SyncPanel({ status, onClose, onUnlink, syncReady }) {
+  const [code, setCode] = useState(null);
+  const [enterCode, setEnterCode] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const generate = async () => {
+    setBusy(true); setMsg('');
+    const c = await window.SkinSync.getLinkCode();
+    setBusy(false);
+    if (c) setCode(c); else setMsg('Не удалось создать код');
+  };
+
+  const apply = async () => {
+    if (!enterCode.trim()) return;
+    setBusy(true); setMsg('');
+    const r = await window.SkinSync.useLinkCode(enterCode.trim());
+    setBusy(false);
+    if (r.ok) { setMsg('✓ Связано! Перезагрузка...'); setTimeout(() => location.reload(), 800); }
+    else setMsg('✗ ' + (r.error || 'Ошибка'));
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(10,10,10,0.7)', zIndex: 1000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+    }} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        background: '#c4c0b8', maxWidth: 480, width: '100%', padding: 32,
+        border: '1px solid #0a0a0a',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 32 }}>
+          <h3 style={{ fontSize: 24, fontWeight: 500, letterSpacing: '-0.02em' }}>Синхронизация</h3>
+          <button onClick={onClose} style={{ ...iconBtn, width: 'auto', padding: '4px 12px' }}>✕</button>
+        </div>
+
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#4a4740', marginBottom: 8 }}>STATUS</div>
+        <div style={{ marginBottom: 32, fontSize: 14 }}>
+          {!syncReady && 'Подключение...'}
+          {syncReady && status.mode === 'local' && (
+            <div>
+              <div style={{ marginBottom: 8 }}>○ Локальный режим — облако недоступно</div>
+              <div style={{ fontSize: 12, color: '#4a4740', lineHeight: 1.5 }}>
+                Этот домен не добавлен в whitelist Firebase. В Firebase Console: <b>Authentication → Settings → Authorized domains → Add domain</b> — добавь свой домен (например <code>forevernatali.github.io</code>), потом обнови страницу.
+              </div>
+            </div>
+          )}
+          {syncReady && status.mode === 'cloud' && status.linkedAccountId && <span>✓ Связан с другим устройством</span>}
+          {syncReady && status.mode === 'cloud' && !status.linkedAccountId && <span>✓ Cloud sync · отдельный аккаунт</span>}
+        </div>
+
+        <div style={{ borderTop: '1px solid #6f6c64', paddingTop: 24, marginBottom: 24 }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#4a4740', marginBottom: 12 }}>
+            ПРИВЯЗАТЬ ЭТО УСТРОЙСТВО
+          </div>
+          <p style={{ fontSize: 13, color: '#2a2823', marginBottom: 16, lineHeight: 1.5 }}>
+            На <b>другом</b> устройстве сгенерируй код и введи его здесь.
+          </p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={enterCode} onChange={e => setEnterCode(e.target.value.toUpperCase())}
+              placeholder="A1B2C3" maxLength={6}
+              style={{ flex: 1, fontFamily: 'JetBrains Mono, monospace', fontSize: 18,
+                padding: '12px 16px', background: 'transparent', border: '1px solid #0a0a0a',
+                letterSpacing: '0.2em', textAlign: 'center', color: '#0a0a0a' }} />
+            <button onClick={apply} disabled={busy} style={{
+              padding: '0 20px', background: '#0a0a0a', color: '#c4c0b8',
+              border: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+              letterSpacing: '0.15em', cursor: busy ? 'wait' : 'pointer',
+            }}>OK</button>
+          </div>
+          {msg && <div style={{ marginTop: 12, fontSize: 13, color: '#0a0a0a' }}>{msg}</div>}
+        </div>
+
+        <div style={{ borderTop: '1px solid #6f6c64', paddingTop: 24, marginBottom: 24 }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, letterSpacing: '0.15em', color: '#4a4740', marginBottom: 12 }}>
+            ИЛИ СГЕНЕРИРОВАТЬ КОД
+          </div>
+          <p style={{ fontSize: 13, color: '#2a2823', marginBottom: 16, lineHeight: 1.5 }}>
+            Введи этот код на другом устройстве — оно подключится к твоему аккаунту.
+          </p>
+          {!code && <button onClick={generate} disabled={busy} style={{
+            padding: '12px 20px', background: 'transparent', color: '#0a0a0a',
+            border: '1px solid #0a0a0a', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+            letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase',
+          }}>Создать код</button>}
+          {code && <div style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 36, letterSpacing: '0.2em',
+            padding: '20px', textAlign: 'center', background: '#0a0a0a', color: '#c9986a',
+          }}>{code}</div>}
+          {code && <p style={{ fontSize: 12, color: '#4a4740', marginTop: 8 }}>Действителен 24 часа</p>}
+        </div>
+
+        {status.linkedAccountId && (
+          <div style={{ borderTop: '1px solid #6f6c64', paddingTop: 24 }}>
+            <button onClick={onUnlink} style={{
+              padding: '8px 16px', background: 'transparent', color: '#0a0a0a',
+              border: '1px solid #6f6c64', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+              letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase',
+            }}>Отвязать устройство</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Main App ----------
+
 function App() {
   const [cur, setCur] = useState(todayIdx());
-  const [checks, setChecks] = useState(() => loadJSON('skp_minimal_checks', {}));
-  const [history, setHistory] = useState(() => loadJSON('skp_minimal_history', {}));
+  const [routine, setRoutine] = useState(cloneDefault());
+  const [checks, setChecks] = useState({});
+  const [history, setHistory] = useState({});
+  const [editing, setEditing] = useState(false);
+  const [showSync, setShowSync] = useState(false);
+  const [syncStatus, setSyncStatus] = useState({ ready: false });
   const today = todayIdx();
+  const skipNextSync = useRef(false);
 
+  // init Firebase sync
   useEffect(() => {
-    saveJSON('skp_minimal_checks', checks);
+    let off;
+    (async () => {
+      try {
+        await window.SkinSync.init();
+        off = window.SkinSync.onState((s) => {
+          setSyncStatus(s);
+          skipNextSync.current = true;
+          setChecks(s.checks || {});
+          setHistory(s.history || {});
+          if (s.routine && Array.isArray(s.routine) && s.routine.length === 7) setRoutine(s.routine);
+        });
+      } catch (e) { console.error(e); setSyncStatus({ ready: true, error: e.message }); }
+    })();
+    return () => { if (off) off(); };
+  }, []);
+
+  // Push checks/history
+  useEffect(() => {
+    if (!syncStatus.ready) return;
+    if (skipNextSync.current) { skipNextSync.current = false; return; }
+    const nextHistory = { ...history };
     const k = dateKey(0);
     const any = Object.keys(checks).some(key => key.startsWith(today + '_') && checks[key]);
-    if (any && !history[k]) {
-      const next = { ...history, [k]: true };
-      setHistory(next); saveJSON('skp_minimal_history', next);
-    }
+    if (any && !nextHistory[k]) { nextHistory[k] = true; setHistory(nextHistory); }
+    window.SkinSync.updateChecks(checks, nextHistory);
   }, [checks]);
 
   const toggle = (di, sec, i) => setChecks(c => ({ ...c, [`${di}_${sec}_${i}`]: !c[`${di}_${sec}_${i}`] }));
 
+  const mutateRoutine = (fn) => {
+    const next = JSON.parse(JSON.stringify(routine));
+    fn(next);
+    setRoutine(next);
+    window.SkinSync.updateRoutine(next);
+  };
+
+  const resetRoutine = () => {
+    if (!confirm('Сбросить шаги к стандартным?')) return;
+    const def = cloneDefault();
+    setRoutine(def);
+    window.SkinSync.updateRoutine(def);
+  };
+
   const dayProgress = (i) => {
-    const d = DATA[i];
+    const d = routine[i] || DEFAULT_DATA[i];
     const t = d.morning.length + d.evening.length;
     let dn = 0;
     d.morning.forEach((_,j)=>{ if(checks[`${i}_m_${j}`]) dn++; });
@@ -99,26 +306,41 @@ function App() {
   const stats = useMemo(() => {
     let total = 0, done = 0;
     const counts = {};
-    DATA.forEach((d, di) => {
+    routine.forEach((d, di) => {
       ['morning','evening'].forEach(sec => {
         const sk = sec === 'morning' ? 'm' : 'e';
         d[sec].forEach((s, i) => { total++; if (checks[`${di}_${sk}_${i}`]) { done++; counts[s.n] = (counts[s.n]||0)+1; }});
       });
     });
     return { total, done, pct: total?done/total:0, fav: Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5) };
-  }, [checks]);
+  }, [checks, routine]);
 
-  const day = DATA[cur];
+  const day = routine[cur] || DEFAULT_DATA[cur];
   const dp = dayProgress(cur);
   const isToday = cur === today;
   const now = new Date();
+
+  const updateDayField = (field, value) => mutateRoutine(d => { d[cur][field] = value; });
 
   return (
     <>
       <style>{`
         body { background: #c4c0b8; color: #0a0a0a; font-family: 'Inter Tight', -apple-system, sans-serif; }
         ::selection { background: #0a0a0a; color: #c4c0b8; }
+        input, textarea, select { font-family: inherit; }
       `}</style>
+
+      {/* Floating action toolbar */}
+      <div style={{
+        position: 'fixed', top: 16, right: 16, zIndex: 100, display: 'flex', gap: 8,
+      }}>
+        <button onClick={() => setShowSync(true)} title="Синхронизация" style={floatBtn(false)}>
+          ⇄ SYNC
+        </button>
+        <button onClick={() => setEditing(e => !e)} style={floatBtn(editing)}>
+          {editing ? '✓ ГОТОВО' : '✎ EDIT'}
+        </button>
+      </div>
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px clamp(20px, 4vw, 48px)' }}>
 
@@ -169,7 +391,7 @@ function App() {
             ВЫБРАТЬ ДЕНЬ
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid #0a0a0a', borderBottom: '1px solid #0a0a0a' }}>
-            {DATA.map((d, i) => {
+            {routine.map((d, i) => {
               const p = dayProgress(i);
               const active = i === cur;
               const isT = i === today;
@@ -181,14 +403,12 @@ function App() {
                   padding: '20px 12px', cursor: 'pointer', textAlign: 'left',
                   transition: 'all 0.2s ease', fontFamily: 'inherit',
                   display: 'flex', flexDirection: 'column', gap: 12, minHeight: 140,
-                }}
-                onMouseEnter={e=>{ if(!active) e.currentTarget.style.background='#aeaaa2'; }}
-                onMouseLeave={e=>{ if(!active) e.currentTarget.style.background=''; }}>
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, letterSpacing: '0.15em' }}>
                       {String(i+1).padStart(2,'0')}
                     </span>
-                    {isT && <span style={{ width: 6, height: 6, background: active ? '#c9986a' : '#c9986a', borderRadius: '50%' }}/>}
+                    {isT && <span style={{ width: 6, height: 6, background: '#c9986a', borderRadius: '50%' }}/>}
                   </div>
                   <div style={{ fontSize: 'clamp(16px, 2vw, 22px)', fontWeight: 500, lineHeight: 1, letterSpacing: '-0.01em' }}>
                     {d.short}
@@ -196,8 +416,7 @@ function App() {
                   <div style={{ marginTop: 'auto', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, opacity: active ? 0.7 : 0.5 }}>
                     {Math.round(p.pct*100)}%
                   </div>
-                  {/* progress bar */}
-                  <div style={{ height: 2, background: active ? 'rgba(255,255,255,0.2)' : '#6f6c64', position: 'relative' }}>
+                  <div style={{ height: 2, background: active ? 'rgba(196,192,184,0.3)' : '#6f6c64', position: 'relative' }}>
                     <div style={{ position: 'absolute', inset: 0, width: `${p.pct*100}%`, background: active ? '#c9986a' : '#0a0a0a', transition: 'width 0.5s ease' }}/>
                   </div>
                 </button>
@@ -210,12 +429,19 @@ function App() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginBottom: 80, alignItems: 'flex-end' }}>
           <div>
             <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
-              № 0{cur+1} / {isToday ? 'СЕГОДНЯ' : day.name.toUpperCase()} / {day.mood.toUpperCase()}
+              № 0{cur+1} / {isToday ? 'СЕГОДНЯ' : day.name.toUpperCase()} / {editing ?
+                <input value={day.mood} onChange={e=>updateDayField('mood', e.target.value)} style={{...editInputStyle(false), display:'inline-block', width: 120}}/>
+                : day.mood.toUpperCase()}
             </div>
-            <h2 style={{
-              fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 500, lineHeight: 0.95,
-              letterSpacing: '-0.04em', color: '#0a0a0a', margin: 0,
-            }}>{day.theme}</h2>
+            {editing ? (
+              <input value={day.theme} onChange={e=>updateDayField('theme', e.target.value)}
+                style={{ width: '100%', fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 500, lineHeight: 0.95,
+                  letterSpacing: '-0.04em', color: '#0a0a0a', background: 'transparent',
+                  border: 'none', borderBottom: '1px solid #6f6c64', padding: '4px 0', outline: 'none', fontFamily: 'inherit' }}/>
+            ) : (
+              <h2 style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 500, lineHeight: 0.95,
+                letterSpacing: '-0.04em', color: '#0a0a0a', margin: 0 }}>{day.theme}</h2>
+            )}
           </div>
           <div>
             <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
@@ -238,14 +464,34 @@ function App() {
           paddingTop: 24, paddingBottom: 24, borderTop: '1px solid #0a0a0a', borderBottom: '1px solid #0a0a0a',
         }}>
           <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em' }}>NOTE</div>
-          <p style={{ fontSize: 'clamp(18px, 2vw, 22px)', lineHeight: 1.5, color: '#0a0a0a', margin: 0, maxWidth: 700 }}>
-            {day.tip}
-          </p>
+          {editing ? (
+            <textarea value={day.tip} onChange={e=>updateDayField('tip', e.target.value)}
+              rows={3}
+              style={{ width: '100%', fontSize: 'clamp(18px, 2vw, 22px)', lineHeight: 1.5, color: '#0a0a0a',
+                background: 'transparent', border: '1px solid #6f6c64', padding: 12, outline: 'none',
+                fontFamily: 'inherit', resize: 'vertical' }}/>
+          ) : (
+            <p style={{ fontSize: 'clamp(18px, 2vw, 22px)', lineHeight: 1.5, color: '#0a0a0a', margin: 0, maxWidth: 700 }}>
+              {day.tip}
+            </p>
+          )}
         </div>
 
         {/* Sections */}
-        <Section num="I" label="Утро" steps={day.morning} dayIdx={cur} sec="m" checks={checks} toggle={toggle} />
-        <Section num="II" label="Вечер" steps={day.evening} dayIdx={cur} sec="e" checks={checks} toggle={toggle} />
+        <Section num="I" label="Утро" steps={day.morning} dayIdx={cur} sec="m" checks={checks} toggle={toggle}
+          editing={editing} mutate={mutateRoutine} />
+        <Section num="II" label="Вечер" steps={day.evening} dayIdx={cur} sec="e" checks={checks} toggle={toggle}
+          editing={editing} mutate={mutateRoutine} />
+
+        {editing && (
+          <div style={{ paddingTop: 24, borderTop: '1px solid #6f6c64', marginBottom: 64 }}>
+            <button onClick={resetRoutine} style={{
+              padding: '8px 16px', background: 'transparent', color: '#0a0a0a',
+              border: '1px solid #6f6c64', fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+              letterSpacing: '0.15em', cursor: 'pointer', textTransform: 'uppercase',
+            }}>↺ Сбросить к стандартному</button>
+          </div>
+        )}
 
         {/* Week summary */}
         <section style={{ marginTop: 96, paddingTop: 32, borderTop: '1px solid #0a0a0a' }}>
@@ -256,9 +502,8 @@ function App() {
             {Math.round(stats.pct*100)}<span style={{ color: '#4a4740' }}>%</span> <span style={{ color: '#c9986a' }}>выполнено</span>
           </h3>
 
-          {/* Week bars */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12, marginBottom: 48 }}>
-            {DATA.map((d, i) => {
+            {routine.map((d, i) => {
               const p = dayProgress(i);
               return (
                 <div key={i}>
@@ -273,41 +518,32 @@ function App() {
               );
             })}
           </div>
-
-          {/* Favorites */}
-          {stats.fav.length > 0 && stats.fav[0][1] > 0 && (
-            <div>
-              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740', letterSpacing: '0.15em', marginBottom: 16 }}>
-                ЛЮБИМЫЕ ШАГИ / TOP {stats.fav.length}
-              </div>
-              <div style={{ borderTop: '1px solid #0a0a0a' }}>
-                {stats.fav.map(([name, count], i) => (
-                  <div key={name} style={{
-                    display: 'grid', gridTemplateColumns: '60px 1fr 80px 60px', gap: 24, alignItems: 'baseline',
-                    padding: '20px 0', borderBottom: '1px solid #6f6c64',
-                  }}>
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#4a4740' }}>{String(i+1).padStart(2,'0')}</span>
-                    <span style={{ fontSize: 18, fontWeight: 500 }}>{name}</span>
-                    <div style={{ height: 4, background: '#6f6c64', position: 'relative' }}>
-                      <div style={{ position: 'absolute', inset: 0, width: `${(count/stats.fav[0][1])*100}%`, background: '#0a0a0a' }}/>
-                    </div>
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 13, color: '#0a0a0a', textAlign: 'right' }}>×{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </section>
 
         <footer style={{ marginTop: 80, paddingTop: 24, borderTop: '1px solid #0a0a0a',
           display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
           color: '#4a4740', letterSpacing: '0.15em' }}>
           <span>SKINCARE PROTOCOL / 2026</span>
-          <span>END</span>
+          <span>{syncStatus.ready ? (syncStatus.mode === 'cloud' ? '● CLOUD SYNC' : '○ LOCAL ONLY') : '... CONNECTING'}</span>
         </footer>
       </div>
+
+      {showSync && <SyncPanel status={syncStatus} syncReady={syncStatus.ready}
+        onClose={() => setShowSync(false)} onUnlink={() => window.SkinSync.unlink()} />}
     </>
   );
 }
+
+const floatBtn = (active) => ({
+  padding: '8px 14px',
+  background: active ? '#0a0a0a' : '#c4c0b8',
+  color: active ? '#c4c0b8' : '#0a0a0a',
+  border: '1px solid #0a0a0a',
+  fontFamily: 'JetBrains Mono, monospace',
+  fontSize: 11,
+  letterSpacing: '0.15em',
+  cursor: 'pointer',
+  textTransform: 'uppercase',
+});
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
