@@ -415,7 +415,7 @@ function App({ initial }) {
           display: 'flex', justifyContent: 'space-between', fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
           color: '#4a4740', letterSpacing: '0.15em' }}>
           <span>SKINCARE PROTOCOL / 2026</span>
-          <span>{syncStatus.ready ? '● LOCAL' : '...'}</span>
+          <span>● LOCAL</span>
         </footer>
       </div>
     </>
